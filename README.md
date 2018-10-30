@@ -1,2 +1,9 @@
+
+
 # Voronoi diagram (Dirichlet Tessellation)
-A Julia implementation of Fortune's algorithm to compute the Voronoi diagram of a weighted and non-weighted point set.
+
+This is Fortune's algorithm implemented in Julia.
+
+# Usage
+
+See the example (example.ipynb) for details.
