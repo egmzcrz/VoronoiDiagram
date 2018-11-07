@@ -74,9 +74,8 @@ end
 
 # Parabola with focal point f, and directrix ly evaluated at x
 function parabola(x::Float64, ly::Float64, f::Point)
-    a = 2*(f.y - ly)
-    b = f.x*f.x + f.y*f.y - ly*ly
-    return (x*x - 2*x*f.x + b)/a
+    a::Float64 = f.x - x
+    return 0.5 * (f.y + ly + a * a / (f.y - ly))
 end
 
 # fa and fb are focal points, ly is the directrix.
