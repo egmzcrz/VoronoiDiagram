@@ -1,3 +1,7 @@
+module VoronoiDiagram
+
+export getVoronoiDiagram
+
 include("maxPQ.jl")
 
 abstract type VoronoiEvent end
@@ -424,3 +428,5 @@ function setLeftChild!(node::Breakpoint, child::VoronoiNode)
     child.parent = node
 end
 ###################################################################
+
+end # module
