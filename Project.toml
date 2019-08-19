@@ -1,6 +1,0 @@
-authors = ["Enrique Gómez Cruz <enriquegomezcruz@gmail.com>"]
-name = "VoronoiDiagram"
-uuid = "9c53df4c-ed64-11e8-28d2-8b7043a8b9a2"
-version = "0.1.0"
-
-[deps]

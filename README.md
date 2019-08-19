@@ -4,4 +4,4 @@ This is Fortune's algorithm implemented in Julia.
 
 # Usage
 
-See the example (example.ipynb) for details.
+See the example (src/test.ipynb) for usage details.
