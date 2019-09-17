@@ -261,8 +261,8 @@ function handleCircleEvent!(events::Vector{AbstractVoronoiEvent},
 
     innerMost.halfedge = mhe
 
-    # Push disappearing halfedges
-    push!(diagram.halfedges, lhe, rhe)
+    # Push finished halfedges
+    push!(diagram.halfedges, lhe, rhe, mhe.twin)
     push!(diagram.vertices, vv)
 
     # Check for potential circle events.
@@ -278,53 +278,7 @@ function handleCircleEvent!(events::Vector{AbstractVoronoiEvent},
     end
 end
 
-function intersectWithBoundingBox!(halfedge::Halfedge, s::Point, boundingBox::Vector{Halfedge})
-    # Haldedge's origin.
-    q = halfedge.origin.coordinates
-    #
-    # Intersect halfedge with bounding box.
-    intersections = []
-    for x0 in boundingBox
-        p = x0.origin.coordinates
-        r = x0.next.origin.coordinates .- p
-
-        # Check if halfedge enters or exits bounding box.
-        # if dot(s, r') > 0 then halfedge exits, where r' = (ry, -rx).
-        sdotrp = s[1]*r[2] - s[2]*r[1]
-        if sdotrp <= 0; continue; end
-        #
-        # Intersection occurs at t = ((q - p) x s) / (r x s)
-        a = (q .- p)
-        axs = a[1]*s[2] - a[2]*s[1]
-        axr = a[1]*r[2] - a[2]*r[1]
-        rxs = r[1]*s[2] - r[2]*s[1]
-        t = axs / rxs
-        u = axr / rxs
-        if rxs != 0 && 0 < t <= 1 && u >= 0
-            x = Halfedge()
-            x.origin = Vertex(p .+ t .* r)
-
-            x.next = x0.next
-            x0.next.prev = x
-
-            twin = halfedge.twin
-
-            twin.origin = x.origin
-
-            x.prev = halfedge
-            halfedge.next = x
-
-            x0.next = twin
-            twin.prev = x0
-            push!(intersections, x)
-        end
-    end
-    for x in intersections
-        push!(boundingBox, x)
-    end
-end
-
-function clipHalfedges!(beachline::Beachline, diagram::PolygonalMesh, boundingBox::Vector{Halfedge})
+function finishEdges!(beachline::Beachline, diagram::PolygonalMesh, boundingBox::Vector{Halfedge})
     node = beachline.root
     if isa(node, Arc); return; end
     breakpts::Vector{Breakpoint} = [node]
@@ -343,7 +297,18 @@ function clipHalfedges!(beachline::Beachline, diagram::PolygonalMesh, boundingBo
         ny = rsite[2] - lsite[2]
         s = (ny, -nx)
 
-        intersectWithBoundingBox!(halfedge, s, boundingBox)
+        v = Vertex(halfedge.origin.coordinates .+ 100 .* s)
+        v.incidentHalfedge = halfedge.twin
+        halfedge.twin.origin = v
+        tmp = halfedge
+        while tmp.prev !== nothing
+            tmp = tmp.prev
+        end
+        halfedge.next = tmp
+        tmp.prev = halfedge
+
+        # Push finished halfedges
+        push!(diagram.halfedges, halfedge)
 
         lchild = breakpoint.left
         rchild = breakpoint.right
@@ -352,21 +317,6 @@ function clipHalfedges!(beachline::Beachline, diagram::PolygonalMesh, boundingBo
         end
         if isa(rchild, Breakpoint)
             push!(breakpts, rchild)
-        end
-    end
-
-
-    for halfedge in diagram.halfedges
-        # intersect halfedge with bounding box.
-        p = halfedge.twin.origin.coordinates
-        twin = halfedge.twin
-        # TODO: generalize this:
-        #if !(0.0 < p[1] < 1.0 && 0.0 < p[2] < 1.0)
-        if halfedge.origin != nothing
-            #
-            # Halfedge's direction (clockwise rotation), s.
-            s = twin.origin.coordinates .- halfedge.origin.coordinates
-            intersectWithBoundingBox!(halfedge, s, boundingBox)
         end
     end
 end
@@ -412,11 +362,27 @@ function getVoronoiDiagram(sites::Vector{Point})
         end
     end
 
+
     diagram.faces[1].outerComponent = diagram.faces[2].outerComponent.twin
     diagram.faces[1].outerComponent.incidentFace = diagram.faces[1]
 
+
     # Make edges fit inside bounding box.
-    #bbox = boundingBox([(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)])
-    #clipHalfedges!(beachline, diagram, bbox)
+    bbox = boundingBox([(0.0, 0.0), (1.0, 0.0), (1.0, 1.0), (0.0, 1.0)])
+    finishEdges!(beachline, diagram, bbox)
+
+    # Connect every halfedge to a face.
+    for face in diagram.faces
+        halfedge = face.outerComponent
+        while true
+            halfedge.incidentFace = face
+
+            halfedge = halfedge.next
+            if halfedge === face.outerComponent
+                break
+            end
+        end
+    end
+
     return diagram
 end
