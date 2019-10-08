@@ -16,7 +16,8 @@ end
 mutable struct Face <: AbstractFace
     site::NTuple{2, Float64}
     outerComponent::Union{AbstractHalfedge, Nothing}
-    Face(site) = new(site, nothing)
+    area::Float64
+    Face(site) = new(site, nothing, 0.0)
 end
 
 struct PolygonalMesh <: AbstractPolygonalMesh
