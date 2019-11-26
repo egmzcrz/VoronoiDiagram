@@ -348,6 +348,7 @@ function finishFaces!(diagram::PolygonalMesh)
                     prev.incidentFace = face
                     prev = prev.prev
                 end
+                prev.incidentFace = face
 
                 # Link both open ends
                 halfedge.next = prev
